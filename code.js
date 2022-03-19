@@ -38,6 +38,10 @@ figma.ui.onmessage = msg => {
         component.y = 0;
         //    figma.currentPage.appendChild(svg);
     }
+    if (msg.type === 'create-library') {
+        const nodes = [];
+        console.log(msg.doc);
+    }
     // Make sure to close the plugin when you're done. Otherwise the plugin will
     // keep running, which shows the cancel button at the bottom of the screen.
     //figma.closePlugin();

@@ -41,22 +41,21 @@ figma.ui.onmessage = msg => {
 
 
     const component = figma.createComponent()
-
     component.resizeWithoutConstraints(svg.width, svg.height)
-
     component.name = "title: " + msg.title
-
     component.appendChild(svg)
 
     component.x = 64
     component.y = 0
 
     //    figma.currentPage.appendChild(svg);
-
-
-
   }
 
+  if (msg.type === 'create-library') {
+    const nodes: SceneNode[] = [];
+    console.log(msg.doc);
+
+  }
 
   // Make sure to close the plugin when you're done. Otherwise the plugin will
   // keep running, which shows the cancel button at the bottom of the screen.
