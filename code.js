@@ -45,7 +45,7 @@ figma.ui.onmessage = msg => {
             const svg = figma.createNodeFromSvg(element.svg);
             svg.name = "title: " + element.name;
             svg.x = 0 + 64 * i;
-            svg.y = 200 + i % 10;
+            svg.y = 400;
         });
     }
     // Make sure to close the plugin when you're done. Otherwise the plugin will

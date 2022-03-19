@@ -1,28 +1,5 @@
-<!-- <h2>Rectangle Creator</h2>
-<p>Count: <input id="count" value="5"></p>
-<button id="create">Create</button>
-<button id="cancel">Cancel</button>
-<script>
-
-document.getElementById('create').onclick = () => {
-  const textbox = document.getElementById('count');
-  const count = parseInt(textbox.value, 10);
-  parent.postMessage({ pluginMessage: { type: 'create-rectangles', count } }, '*')
-}
-
-document.getElementById('cancel').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-}
-
-</script> -->
-
-<input type="file" name="" id="input" multiple>
-<p id="fileCounter">No files selected</p>
-
-<button onclick="handleSubmit()">Insert</button>
-
 <input type="file" name="" id="inputDir" webkitdirectory multiple>
-<button onclick="handleWebkitSubmit()">Select Folder</button>
+<button onclick="handleWebkitSubmit()">Insert Selection</button>
 
 <ul id="previewList">
 
@@ -34,94 +11,10 @@ document.getElementById('cancel').onclick = () => {
 </div>
 
 <script>
-  console.log(this)
-
-  var files
-
-  const inputElement = document.getElementById("input");
-  inputElement.addEventListener("change", readmultifiles, false);
+  // console.log(this)
 
   const inputElementDir = document.getElementById("inputDir");
   inputElementDir.addEventListener("input", handleWebkitDir, false);
-
-  const status = document.getElementById('status');
-  const output = document.getElementById('output');
-  function handleFiles() {
-    //   const fileCount = this.files.length; /* now you can work with the file list */
-    //   console.log(this.files);
-    //   files = this.files
-    //   console.log(files);
-    // document.getElementById("fileCounter").innerHTML = fileCount
-
-    output.src = '';
-    status.textContent = '';
-    const file = event.target.files[0];
-    if (!file.type) {
-      status.textContent = 'Error: The File.type property does not appear to be supported on this browser.';
-      return;
-    }
-    if (!file.type.match('image.*')) {
-      status.textContent = 'Error: The selected file does not appear to be an image.'
-      return;
-    }
-    const reader = new FileReader();
-    reader.addEventListener('load', event => {
-      console.log("loaded");
-      console.log(event.target);
-    });
-
-    reader.addEventListener('progress', (event) => {
-      if (event.loaded && event.total) {
-        const percent = (event.loaded / event.total) * 100;
-        console.log(`Progress: ${Math.round(percent)}`);
-      }
-    });
-
-    reader.readAsText(file);
-  }
-
-  function handleSubmit() {
-    fileList.forEach(file => {
-      const parser = new DOMParser();
-
-      const doc = parser.parseFromString(file, "image/svg+xml")
-      console.log(doc);
-      status.textContent = file
-
-      const title = doc.getElementsByTagName("title")[0].innerHTML
-      console.log(title);
-
-
-      parent.postMessage({ pluginMessage: { type: 'create-svg', doc: file, title: title } }, '*')
-
-
-    })
-  }
-
-  let fileList = []
-
-  function readmultifiles(e) {
-
-    console.log(e);
-
-    const files = e.currentTarget.files;
-
-    Object.keys(files).forEach(i => {
-      console.log(files[i].size);
-    })
-
-    Object.keys(files).forEach(i => {
-      const file = files[i];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        //server call for uploading or reading the files one-by-one
-        //by using 'reader.result' or 'file'
-        console.log(event.target.result);
-        fileList.push(event.target.result)
-      }
-      reader.readAsBinaryString(file);
-    })
-  };
 
 
   let filesArray = []

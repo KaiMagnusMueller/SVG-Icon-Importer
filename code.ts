@@ -60,7 +60,7 @@ figma.ui.onmessage = msg => {
       svg.name = "title: " + element.name
 
       svg.x = 0 + 64 * i
-      svg.y = 200 + i % 10
+      svg.y = 400
     });
 
   }
