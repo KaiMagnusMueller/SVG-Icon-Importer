@@ -120,12 +120,12 @@ document.getElementById('cancel').onclick = () => {
   };
 
 
+  let filesArray = []
 
   //Select folder
   function handleWebkitDir(e) {
     // console.log(e.target.files);
 
-    let filesArray = []
 
 
     Object.keys(e.target.files).forEach(i => {
@@ -162,46 +162,6 @@ document.getElementById('cancel').onclick = () => {
     })
 
     console.log(filesArray);
-
-    // const svgString = getSvgString(filesArray[0])
-
-    // console.log(svgString.result);
-
-
-
-    // Object.keys(e.target.files).forEach(i => {
-
-    //   file = e.target.files[i]
-
-
-    //   let svgString
-    //   const svgStringPromise = getSvgString(file)
-
-    //   svgString = svgStringPromise.then((result) => {
-    //     return result
-    //   })
-
-    //   console.log(svgString);
-
-    //   // const svgSize = getIconSize(svgString)
-
-    //   fileArray.push({
-    //     name: file.name,
-    //     // file: svgSize
-    //   })
-    // })
-
-    // console.log(fileArray);
-
-
-    // fileArray.forEach(file => {
-    //   console.log(file.path)
-    // })
-
-    // for (let i = 0; i < fileArray.length; i++) {
-    //   const element = fileArray[i];
-    //   console.log(element.webkitRelativePath);
-    // }
   }
 
   //return folder array 
@@ -214,15 +174,6 @@ document.getElementById('cancel').onclick = () => {
     const svgPromise = await file.text();
     const svg = await svgPromise
     return svg
-
-    // try {
-    //   const data = await file.text()
-    //   console.log(data);
-    //   return data
-
-    // } catch (error) {
-    //   console.log(`Could not read file ${file.name}`);
-    // }
   }
 
   //get icon size from svg string 
@@ -247,14 +198,9 @@ document.getElementById('cancel').onclick = () => {
   }
 
   //Submit button for webkit dir
-  async function handleWebkitSubmit() {
-    const dirHandle = await document.window.showOpenFilePicker();
-
-    const file = await dirHandle.getFile();
-
-
-    console.log(dirHandle);
-    console.log(file);
+  function handleWebkitSubmit() {
+    console.log(filesArray[0]);
+    parent.postMessage({ pluginMessage: { type: 'create-library', doc: filesArray[0] } }, '*')
   }
 
 </script>
