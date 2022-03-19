@@ -21,8 +21,12 @@ document.getElementById('cancel').onclick = () => {
 
 <button onclick="handleSubmit()">Insert</button>
 
-<input type="file" name="" id="inputDir" webkitdirectory multiple">
+<input type="file" name="" id="inputDir" webkitdirectory multiple>
 <button onclick="handleWebkitSubmit()">Select Folder</button>
+
+<ul id="previewList">
+
+</ul>
 
 <p id="status"></p>
 <div>
@@ -126,7 +130,7 @@ document.getElementById('cancel').onclick = () => {
   function handleWebkitDir(e) {
     // console.log(e.target.files);
 
-
+    let _files = []
 
     Object.keys(e.target.files).forEach(i => {
       const file = e.target.files[i]
@@ -134,27 +138,36 @@ document.getElementById('cancel').onclick = () => {
         console.log(`skipped: ${file.name} in ${file.webkitRelativePath} with file type: ${file.type} .`);
         return
       }
+      _files.push(file)
+    })
 
-
-      const svgSize = getIconSize(file)
-
+    Object.keys(_files).forEach(i => {
+      const file = _files[i]
 
       // console.log(svgSize);
       // console.log(getIconSize(file));
 
-      const svgString = getSvgString(file).then((result) => {
-        return result
+      getSvgString(file).then(result => {
+        let svgString = result
+        // console.log(result)
+        // console.log(filesArray[i]);
+
+        const svgSize = getIconSize(svgString)
+
+        filesArray[i].svg = svgString
+        filesArray[i].dimensions = svgSize
+
+
+
+        console.log("READY");
+
+
       })
-
-
-      // console.log(`svg size: `);
-      // console.log(svg);
-
 
       filesArray.push({
         name: file.name,
-        svg: svgString,
-        dimensions: svgSize
+        svg: "",
+        dimensions: ""
       })
 
       //TODO: split svg paths
@@ -162,6 +175,17 @@ document.getElementById('cancel').onclick = () => {
     })
 
     console.log(filesArray);
+
+    const previewList = document.getElementById("previewList")
+
+    filesArray.forEach(element => {
+      const li = document.createElement("li");
+      li.appendChild(document.createTextNode(element.name));
+      previewList.appendChild(li);
+    });
+
+
+
   }
 
   //return folder array 
@@ -170,23 +194,17 @@ document.getElementById('cancel').onclick = () => {
   }
 
   async function getSvgString(file) {
-
     const svgPromise = await file.text();
-    const svg = await svgPromise
-    return svg
+    return svgPromise
   }
 
   //get icon size from svg string 
-  function getIconSize(_file) {
+  function getIconSize(_string) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(_string, "image/svg+xml")
 
-    return getSvgString(_file).then((result) => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(result, "image/svg+xml")
-
-      dimensions = doc.firstChild.viewBox.baseVal
-
-      return [dimensions.width, dimensions.height]
-    })
+    dimensions = doc.firstChild.viewBox.baseVal
+    return [dimensions.width, dimensions.height]
   }
 
   const fileTypes = [
@@ -199,8 +217,7 @@ document.getElementById('cancel').onclick = () => {
 
   //Submit button for webkit dir
   function handleWebkitSubmit() {
-    console.log(filesArray[0]);
-    parent.postMessage({ pluginMessage: { type: 'create-library', doc: filesArray[0] } }, '*')
+    parent.postMessage({ pluginMessage: { type: 'create-library', doc: filesArray } }, '*')
   }
 
 </script>

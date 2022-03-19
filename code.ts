@@ -55,6 +55,14 @@ figma.ui.onmessage = msg => {
     const nodes: SceneNode[] = [];
     console.log(msg.doc);
 
+    msg.doc.forEach((element, i) => {
+      const svg = figma.createNodeFromSvg(element.svg)
+      svg.name = "title: " + element.name
+
+      svg.x = 0 + 64 * i
+      svg.y = 200 + i % 10
+    });
+
   }
 
   // Make sure to close the plugin when you're done. Otherwise the plugin will
