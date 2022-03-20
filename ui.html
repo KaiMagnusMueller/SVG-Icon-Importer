@@ -44,15 +44,17 @@
 </style>
 
 <script>
-
-  Array.prototype.diff = function (arr2) { return this.filter(x => !arr2.includes(x)); }
+  let _figmaNodes
 
   onmessage = (event) => {
     console.log("got this from the plugin code", event.data.pluginMessage)
 
-    if (event.data.pluginMessage == "loaded-nodes") {
-      handeLoadedNodes(event.data.pluginMessage.data)
-    } else if (event.data.pluginMessage == "loaded-nodes-empty") {
+    if (event.data.pluginMessage.type == "loaded-nodes") {
+
+      _figmaNodes = event.data.pluginMessage.data
+
+      // handeLoadedNodes(event.data.pluginMessage.data)
+    } else if (event.data.pluginMessage.type == "loaded-nodes-empty") {
       handeEmptyNodes()
     }
   }
@@ -98,9 +100,15 @@
         const svgSize = getIconSize(svgDoc)
 
 
+        const pathData = getPathData(file)
 
-        filesArray[i].svg = svgString
-        filesArray[i].dimensions = svgSize
+        filesArray.push({
+          name: file.name,
+          svg: svgString,
+          dimensions: svgSize,
+          hash: cyrb53(svgString)
+        })
+
 
 
         // console.log(svgDoc);
@@ -118,19 +126,30 @@
         li.getElementsByTagName("p")[0].innerHTML = file.name
         //append list item
         previewList.appendChild(li);
+
+
+        if (i == _files.length - 1) {
+          console.log(filesArray[0]);
+          console.log(_figmaNodes[0]);
+          handeLoadedNodes(_figmaNodes, filesArray)
+        }
+
+
       })
 
-      const pathData = getPathData(file)
 
-      filesArray.push({
-        name: file.name,
-        svg: "",
-        dimensions: ""
-      })
+
+
+
+
 
       //TODO: split svg paths
 
+
     })
+
+
+
   }
 
   //return folder array 
@@ -169,7 +188,57 @@
 
   //Submit button for webkit dir
   function handleWebkitSubmit() {
+
+    console.log(filesArray);
+
     parent.postMessage({ pluginMessage: { type: 'create-library', doc: filesArray } }, '*')
   }
+
+  function handeLoadedNodes(_figmaNodes, uiFiles) {
+
+
+
+    const figmaHash = _figmaNodes.map(a => a.hash)
+    const filesHash = uiFiles.map(a => a.hash)
+
+    console.log("difference");
+
+    // console.log(filesArray.map(b => b.hash));
+    // console.log(figmaHash);
+    // console.log(filesHash);
+
+
+    // console.log("difference");
+    // console.log(_figmaNodes);
+    // console.log(uiFiles);
+
+    // console.log(_figmaNodes[0]);
+    // console.log(uiFiles[0].svg);
+
+
+
+    const _difference = figmaHash.diff(filesHash)
+
+    console.log(_difference);
+    console.log("end difference");
+
+  }
+
+
+
+  const cyrb53 = function (str, seed = 0) {
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++) {
+      ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  };
+
+  Array.prototype.diff = function (arr2) { return this.filter(x => !arr2.includes(x)); }
+
 
 </script>
