@@ -5,6 +5,25 @@
 // full browser environment (see documentation).
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__, { width: 320, height: 400 });
+const nodes = figma.currentPage.findAllWithCriteria({
+    types: ['FRAME']
+});
+let existingIcons = [];
+if (nodes.length !== 0) {
+    // console.log(nodes);
+    nodes.forEach(i => {
+        const data = i.getPluginData("importedIcon");
+        if (!data) {
+            return;
+        }
+        console.log(JSON.parse(data));
+        existingIcons.push(data);
+    });
+    figma.ui.postMessage({ type: "loaded-nodes", data: existingIcons });
+}
+else {
+    figma.ui.postMessage({ type: "loaded-nodes-empty" });
+}
 // Calls to "parent.postMessage" from within the HTML page will trigger this
 // callback. The callback will be passed the "pluginMessage" property of the
 // posted message.
@@ -40,15 +59,32 @@ figma.ui.onmessage = msg => {
     }
     if (msg.type === 'create-library') {
         const nodes = [];
-        console.log(msg.doc);
+        // console.log(msg.doc);
         msg.doc.forEach((element, i) => {
             const svg = figma.createNodeFromSvg(element.svg);
             svg.name = "title: " + element.name;
             svg.x = 0 + 64 * i;
             svg.y = 400;
+            const pluginData = {
+                updateTime: Date.now,
+                name: element.name,
+                hash: cyrb53(element.svg)
+            };
+            svg.setPluginData("importedIcon", JSON.stringify(pluginData));
         });
     }
     // Make sure to close the plugin when you're done. Otherwise the plugin will
     // keep running, which shows the cancel button at the bottom of the screen.
     //figma.closePlugin();
+};
+const cyrb53 = function (str, seed = 0) {
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 };

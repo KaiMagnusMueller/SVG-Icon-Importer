@@ -10,7 +10,56 @@
   <img id="output">
 </div>
 
+<style>
+  ul {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-gap: 10px;
+    /* margin: 0; */
+    padding: 0;
+  }
+
+  li {
+    list-style: none;
+    border-radius: 4px;
+    border: 2px solid #e0e0e0;
+  }
+
+  li:hover {
+    background-color: rgb(228, 228, 228);
+  }
+
+  li div {
+    aspect-ratio: 1/1;
+    padding: 2px;
+  }
+
+  div svg {
+    aspect-ratio: 1;
+  }
+
+  li p {
+    display: none;
+  }
+</style>
+
 <script>
+
+  Array.prototype.diff = function (arr2) { return this.filter(x => !arr2.includes(x)); }
+
+  onmessage = (event) => {
+    console.log("got this from the plugin code", event.data.pluginMessage)
+
+    if (event.data.pluginMessage == "loaded-nodes") {
+      handeLoadedNodes(event.data.pluginMessage.data)
+    } else if (event.data.pluginMessage == "loaded-nodes-empty") {
+      handeEmptyNodes()
+    }
+  }
+
+  //TODO: handle nodes
+
+
   // console.log(this)
 
   const inputElementDir = document.getElementById("inputDir");
@@ -45,17 +94,33 @@
         // console.log(result)
         // console.log(filesArray[i]);
 
-        const svgSize = getIconSize(svgString)
+        const svgDoc = parseDOM(svgString)
+        const svgSize = getIconSize(svgDoc)
+
+
 
         filesArray[i].svg = svgString
         filesArray[i].dimensions = svgSize
 
 
+        // console.log(svgDoc);
 
-        console.log("READY");
 
-
+        const previewList = document.getElementById("previewList")
+        const li = document.createElement("li");
+        //append svg container
+        li.appendChild(document.createElement("div"))
+        //append svg element from parsed doc
+        li.getElementsByTagName("div")[0].appendChild(svgDoc.firstChild);
+        //create headling
+        li.appendChild(document.createElement("p"));
+        //add heading text
+        li.getElementsByTagName("p")[0].innerHTML = file.name
+        //append list item
+        previewList.appendChild(li);
       })
+
+      const pathData = getPathData(file)
 
       filesArray.push({
         name: file.name,
@@ -66,23 +131,12 @@
       //TODO: split svg paths
 
     })
-
-    console.log(filesArray);
-
-    const previewList = document.getElementById("previewList")
-
-    filesArray.forEach(element => {
-      const li = document.createElement("li");
-      li.appendChild(document.createTextNode(element.name));
-      previewList.appendChild(li);
-    });
-
-
-
   }
 
   //return folder array 
-  function splitPath(file) {
+  function getPathData(file) {
+
+
 
   }
 
@@ -91,12 +145,17 @@
     return svgPromise
   }
 
-  //get icon size from svg string 
-  function getIconSize(_string) {
+  //parse document from string
+  function parseDOM(_string) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(_string, "image/svg+xml")
+    return doc
+  }
 
-    dimensions = doc.firstChild.viewBox.baseVal
+  //get icon size from svg doc 
+  function getIconSize(_doc) {
+
+    dimensions = _doc.firstChild.viewBox.baseVal
     return [dimensions.width, dimensions.height]
   }
 
