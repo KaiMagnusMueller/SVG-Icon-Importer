@@ -31,7 +31,7 @@
 
   li div {
     aspect-ratio: 1/1;
-    padding: 2px;
+    padding: 4px;
   }
 
   div svg {
@@ -41,21 +41,51 @@
   li p {
     display: none;
   }
+
+  .changed {
+    border-color: orange;
+  }
+
+  .added {
+    border-color: green;
+  }
+
+  .deleted {
+    border-color: darkred;
+  }
 </style>
 
 <script>
-  let _figmaNodes
+
+  let systemPresets = [
+    {
+      organization: "IBM",
+      system_title: "Carbon Design System",
+      system_subtitle: "Carbon Icons",
+      preset: {
+        root_folder: "svg",
+      }
+    }
+  ]
+
+  let activePreset = 0
+
+
+
+
+  let figmaNodes
 
   onmessage = (event) => {
-    console.log("got this from the plugin code", event.data.pluginMessage)
+    // console.log("got this from the plugin code", event.data.pluginMessage)
 
     if (event.data.pluginMessage.type == "loaded-nodes") {
-
-      _figmaNodes = event.data.pluginMessage.data
+      figmaNodes = event.data.pluginMessage.data
+      // console.log("got existing icons from Figma");
+      // console.log(figmaNodes);
 
       // handeLoadedNodes(event.data.pluginMessage.data)
     } else if (event.data.pluginMessage.type == "loaded-nodes-empty") {
-      handeEmptyNodes()
+      //handleEmptyNodes()
     }
   }
 
@@ -79,7 +109,7 @@
     Object.keys(e.target.files).forEach(i => {
       const file = e.target.files[i]
       if (!validFileType(file)) {
-        console.log(`skipped: ${file.name} in ${file.webkitRelativePath} with file type: ${file.type} .`);
+        // console.log(`skipped: ${file.name} in ${file.webkitRelativePath} with file type: ${file.type} .`);
         return
       }
       _files.push(file)
@@ -92,6 +122,11 @@
       // console.log(getIconSize(file));
 
       getSvgString(file).then(result => {
+
+        const name = file.name.split(".")[0]
+
+
+
         let svgString = result
         // console.log(result)
         // console.log(filesArray[i]);
@@ -99,63 +134,120 @@
         const svgDoc = parseDOM(svgString)
         const svgSize = getIconSize(svgDoc)
 
+        const svgHash = cyrb53(svgString)
 
-        const pathData = getPathData(file)
+
+        const fileDirectory = getPathData(file)
 
         filesArray.push({
-          name: file.name,
+          name: name,
           svg: svgString,
           dimensions: svgSize,
-          hash: cyrb53(svgString)
+          hash: svgHash,
+          folder: fileDirectory,
+          status: ""
         })
 
+        /*         
+            status:
+              - no change
+                same hash
+              - deleted
+                hash & name don't exist in selected files
+                hash & name exist only in Figma
+              - added
+                hash & name don't exist in figma
+                hash & name only exist in selected files
+              - changed
+                name exists in figma & selected files, but hash changed
+                all other properties need to be the same as well
+                */
 
-
-        // console.log(svgDoc);
-
-
-        const previewList = document.getElementById("previewList")
-        const li = document.createElement("li");
-        //append svg container
-        li.appendChild(document.createElement("div"))
-        //append svg element from parsed doc
-        li.getElementsByTagName("div")[0].appendChild(svgDoc.firstChild);
-        //create headling
-        li.appendChild(document.createElement("p"));
-        //add heading text
-        li.getElementsByTagName("p")[0].innerHTML = file.name
-        //append list item
-        previewList.appendChild(li);
 
 
         if (i == _files.length - 1) {
-          console.log(filesArray[0]);
-          console.log(_figmaNodes[0]);
-          handeLoadedNodes(_figmaNodes, filesArray)
+
+          // console.log("loaded svg files");
+          // console.log(filesArray);
+          // console.log(_figmaNodes[0]);
+          const differences = detectDifferences(figmaNodes, filesArray)
+          console.log(differences);
+
+          if (differences) {
+            Object.keys(differences).forEach(i => {
+
+              const _differences = differences[i]
+              // console.log(i);
+
+              _differences.forEach(element => {
+
+                if (i == "deleted") {
+                  //if it can't be find, it must be deleted
+                  filesArray.push(element)
+                }
+
+                let modifiedItem = filesArray.find(i => i.hash === element.hash)
+
+                modifiedItem.status = i
+                // console.log(modifiedItem);
+              });
+            })
+          }
+
+
+          filesArray.sort(function (a, b) {
+            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+          });
+
+
+
+
+          const previewList = document.getElementById("previewList")
+
+          //updated files array with status
+          filesArray.forEach(element => {
+            const li = document.createElement("li");
+            const svgDoc = parseDOM(element.svg)
+
+            //append svg container
+            li.appendChild(document.createElement("div"))
+            //append svg element from parsed doc
+            li.getElementsByTagName("div")[0].appendChild(svgDoc.firstChild);
+            //create headling
+            li.appendChild(document.createElement("p"));
+            //add heading text
+            li.getElementsByTagName("p")[0].innerHTML = element.name
+            //append list item
+
+            if (element.status) {
+              li.classList.add(element.status)
+            }
+
+            previewList.appendChild(li);
+
+
+          })
         }
-
-
       })
-
-
-
-
-
-
-
-      //TODO: split svg paths
-
-
     })
-
-
-
   }
 
   //return folder array 
-  function getPathData(file) {
+  function getPathData(_file) {
+    const reversedFullPathComponents = _file.webkitRelativePath.split("/").reverse()
+    //delete name of file
+    reversedFullPathComponents.shift()
 
+    const dirStructure = []
 
+    //move up to the root folder defined in the preset
+    reversedFullPathComponents.forEach(element => {
+      if (element != systemPresets[activePreset].preset.root_folder) {
+        dirStructure.push(element)
+      }
+    });
+
+    return dirStructure
 
   }
 
@@ -189,38 +281,157 @@
   //Submit button for webkit dir
   function handleWebkitSubmit() {
 
-    console.log(filesArray);
+    // console.log(filesArray);
 
     parent.postMessage({ pluginMessage: { type: 'create-library', doc: filesArray } }, '*')
   }
 
-  function handeLoadedNodes(_figmaNodes, uiFiles) {
+  function detectDifferences(_figmaNodes, _selectedFiles) {
 
-
+    if (!_figmaNodes?.length) {
+      console.info("no imported icons exist in Figma")
+      return null
+    }
 
     const figmaHash = _figmaNodes.map(a => a.hash)
-    const filesHash = uiFiles.map(a => a.hash)
+    const filesHash = _selectedFiles.map(a => a.hash)
 
-    console.log("difference");
+    let figmaHashSet = new Set([...figmaHash])
+    let filesHashSet = new Set([...filesHash])
 
-    // console.log(filesArray.map(b => b.hash));
-    // console.log(figmaHash);
-    // console.log(filesHash);
+    //check if there are less files selected than there are in figma
+    //returns icons, that appear in Figma, but not in the selected files
+    //relative complement of selected files in Figma
+    var hashesOnlyInFigma = new Set([...figmaHashSet].filter(x => !filesHashSet.has(x)));
 
-
-    // console.log("difference");
-    // console.log(_figmaNodes);
-    // console.log(uiFiles);
-
-    // console.log(_figmaNodes[0]);
-    // console.log(uiFiles[0].svg);
-
+    //check if there are more files selected than there are in figma
+    //returns icons, that appear in the selected files, but not in Figma
+    //relative complement of Figma in selected files
+    var hashesOnlyInFiles = new Set([...filesHashSet].filter(x => !figmaHashSet.has(x)));
 
 
-    const _difference = figmaHash.diff(filesHash)
+    console.log(hashesOnlyInFigma);
+    console.log(hashesOnlyInFiles);
 
-    console.log(_difference);
-    console.log("end difference");
+    let changedItems = {
+      added: [],
+      changed: [],
+      deleted: []
+    }
+
+    //changed
+    //same name with same properties exists in figma & selected files, but hash changed
+
+
+    const figmaNames = _figmaNodes.map(a => a.name)
+    const filesNames = _selectedFiles.map(a => a.name)
+
+    let figmaNameSet = new Set([...figmaNames])
+    let filesNameSet = new Set([...filesNames])
+
+    var intersectingNames = new Set([...figmaNameSet].filter(x => filesNameSet.has(x)));
+    // console.log(intersectingNames);
+
+    hashesOnlyInFigma.forEach(hash => {
+      let objInFigma = _figmaNodes.find(o => o.hash === hash);
+
+      let changedName = objInFigma.name
+      let changedFolder = objInFigma.folder
+
+
+
+      //folder [0] hardcoded, seems to be somehow different when coming from o.folder and objInFigma.folder
+      let objInFiles = _selectedFiles.find(o => o.name === objInFigma.name && o.folder[0] === changedFolder[0]);
+
+      // console.log(objInFigma.folder);
+      // console.log(objInFiles.folder);
+
+
+      if (objInFiles) {
+        console.log(`Found changed item in files with name ${changedName} in folder ${changedFolder}`);
+        changedItems.changed.push(objInFiles)
+
+        hashesOnlyInFigma.delete(hash)
+        hashesOnlyInFiles.delete(objInFiles.hash)
+        //double check if the next entry is not getting deleted here
+      }
+
+    });
+
+
+    //TODO: reference obj in figma in files
+
+
+
+
+
+
+    //deleted
+    //hash & name don't exist in selected files
+    //hash & name exist only in Figma
+    hashesOnlyInFigma.forEach(hash => {
+      let objInFigma = _figmaNodes.find(o => o.hash === hash);
+
+      //find objects with same name in files
+      let objInFiles = _selectedFiles.find(o => o.name === objInFigma.name && o.hash === objInFigma.hash);
+
+      // console.log("objInFigma: ");
+      // console.log(objInFigma);
+
+      if (!objInFiles) {
+        changedItems.deleted.push(objInFigma)
+      }
+    });
+
+    //added
+    //hash & name don't exist in figma
+    //hash & name only exist in selected files
+
+    hashesOnlyInFiles.forEach(hash => {
+      let objInFiles = _selectedFiles.find(o => o.hash === hash);
+
+      //find objects with same name in Figma
+      let objInFigma = _figmaNodes.find(o => o.name === objInFiles.name && o.hash === objInFiles.hash);
+
+      if (!objInFigma) {
+        changedItems.added.push(objInFiles)
+      }
+    });
+
+    for (prop in changedItems) {
+      console.log(`${changedItems[prop].length} item(s) ${prop}`);
+    }
+
+
+    // console.log(changedItems);
+
+    return changedItems
+
+    // if (_difference.size == 0) {
+    //   return "no differences"
+    // }
+
+    // if (_difference.size > 0) {
+    //   console.log("differences");
+    //   console.log(_difference);
+
+    //   return _difference
+    // }
+
+    /*         
+        status:
+          - no change
+            same hash
+          - deleted
+            hash & name don't exist in selected files
+            hash & name exist only in Figma
+          - added
+            hash & name don't exist in figma
+            hash & name only exist in selected files
+          - changed
+            name exists in figma & selected files, but hash changed
+            all other properties need to be the same as well
+            */
 
   }
 

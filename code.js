@@ -3,22 +3,23 @@
 // This file holds the main code for the plugins. It has access to the *document*.
 // You can access browser APIs in the <script> tag inside "ui.html" which has a
 // full browser environment (see documentation).
-// This shows the HTML page in "ui.html".
-figma.showUI(__html__, { width: 320, height: 400 });
+console.clear();
 const nodes = figma.currentPage.findAllWithCriteria({
     types: ['FRAME']
 });
 let existingIcons = [];
 if (nodes.length !== 0) {
-    // console.log(nodes);
     nodes.forEach(i => {
         const data = i.getPluginData("importedIcon");
         if (!data) {
             return;
         }
-        // console.log(JSON.parse(data));
         existingIcons.push(JSON.parse(data));
     });
+}
+// This shows the HTML page in "ui.html".
+figma.showUI(__html__, { width: 320, height: 400 });
+if (existingIcons.length !== 0) {
     figma.ui.postMessage({ type: "loaded-nodes", data: existingIcons });
 }
 else {
@@ -65,11 +66,7 @@ figma.ui.onmessage = msg => {
             svg.name = "title: " + element.name;
             svg.x = 0 + 64 * i;
             svg.y = 400;
-            const pluginData = {
-                updateTime: Date.now,
-                name: element.name,
-                hash: element.hash
-            };
+            const pluginData = element;
             svg.setPluginData("importedIcon", JSON.stringify(pluginData));
         });
     }
