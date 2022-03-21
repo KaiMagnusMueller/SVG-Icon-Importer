@@ -22,7 +22,7 @@
   li {
     list-style: none;
     border-radius: 4px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid transparent;
   }
 
   li:hover {
@@ -43,7 +43,7 @@
   }
 
   .changed {
-    border-color: orange;
+    border-color: cornflowerblue;
   }
 
   .added {
@@ -51,7 +51,7 @@
   }
 
   .deleted {
-    border-color: darkred;
+    border-color: salmon;
   }
 </style>
 
@@ -218,6 +218,9 @@
             //add heading text
             li.getElementsByTagName("p")[0].innerHTML = element.name
             //append list item
+
+            li.title = element.name + " " + element.status
+
 
             if (element.status) {
               li.classList.add(element.status)
