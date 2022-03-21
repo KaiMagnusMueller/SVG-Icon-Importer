@@ -53,6 +53,10 @@
   .deleted {
     border-color: salmon;
   }
+
+  li.deleted div {
+    opacity: 1;
+  }
 </style>
 
 <script>
@@ -219,7 +223,7 @@
             li.getElementsByTagName("p")[0].innerHTML = element.name
             //append list item
 
-            li.title = element.name + " " + element.status
+            li.title = element.name + " " + element.folder + " " + element.status
 
 
             if (element.status) {
